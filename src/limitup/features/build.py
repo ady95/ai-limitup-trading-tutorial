@@ -40,17 +40,21 @@ def build(df=None) -> pd.DataFrame:
     df = load_daily() if df is None else df
     ev = pd.read_parquet(PROCESSED / "events.parquet")
     ev = ev[(ev.group == "close") & ev.has_t1].copy()
-    ds = ev[["code", "date", "market", "upper", *LABELS]].rename(columns=LABELS)
+    ds = ev[["code", "date", "market", "upper", "t3_date", *LABELS]].rename(columns=LABELS)
     for c in ("y_touch", "y_close", "y_p3"):
         ds[c] = ds[c].astype(int)
     ds = daily_features(ds, df)
     ds = intraday_features(ds)
     ds = market_features(ds, df)
     ds["split"] = split_of(ds.date)
+    # 퍼지(purge): 라벨이 보는 기간(최대 T+3일)이 다음 분할 구간으로 넘어가는 이벤트
+    t3 = ds.t3_date.fillna(ds.date)
+    ds["purge"] = split_of(t3) != ds.split
     ds["after_nxt"] = (ds.date >= NXT_START).astype(int)
     ds["has_intraday"] = ds.i_first_min.notna()
     ds["i_split"] = np.where(~ds.has_intraday, None,
                              np.where(ds.date < INTRADAY_SPLIT, "train", "test"))
+    ds["i_purge"] = ds.has_intraday & (ds.date < INTRADAY_SPLIT) & (t3 >= INTRADAY_SPLIT)
     return ds.sort_values(["date", "code"], ignore_index=True)
 
 
