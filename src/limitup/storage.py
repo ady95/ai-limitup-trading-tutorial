@@ -24,6 +24,16 @@ def build():
         SELECT * FROM read_parquet('{DAILY_DIR.as_posix()}/*.parquet')""")
     con.execute(f"""CREATE OR REPLACE VIEW universe AS
         SELECT * FROM read_parquet('{UNIVERSE.as_posix()}')""")
+    # 02-5 당시 시장(market) 열을 붙이고 코넥스 시절 행을 뺀 분석용 뷰.
+    # 마스터의 상장일(listed)은 '현재 시장'에 상장한 날이므로, 그 전 행은 이전 시장의 시세다.
+    #   현재 KOSPI → 이전은 KOSDAQ (이전상장),  현재 KOSDAQ → 이전은 KONEX (가격제한폭 ±15%)
+    con.execute("""CREATE OR REPLACE VIEW market_daily AS
+        SELECT * EXCLUDE (market_at), market_at AS market FROM (
+            SELECT d.*, CASE WHEN u.listed IS NOT NULL AND d.date < u.listed
+                             THEN CASE WHEN u.market = 'KOSPI' THEN 'KOSDAQ' ELSE 'KONEX' END
+                             ELSE u.market END AS market_at
+            FROM daily d JOIN universe u USING (code))
+        WHERE market_at IN ('KOSPI', 'KOSDAQ')""")
     return con
 
 

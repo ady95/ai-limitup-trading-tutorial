@@ -21,8 +21,9 @@ uv run pytest -q             # 상한가 계산 테스트
 | 02-2 | `uv run python -m limitup.collectors.quote 005930` | 현재가·기준가·상한가 조회 |
 | 02-3 | `uv run python -m limitup.collectors.master` | `data/raw/universe.parquet` (상장 + 2021년 이후 폐지 종목) |
 | 02-3 | `uv run python -m limitup.collectors.daily` | `data/raw/daily/<종목코드>.parquet` (2020-09-01~, 원주가) |
-| 02-4 | `uv run python -m limitup.storage` | `data/limitup.duckdb` (Parquet 위의 뷰) |
+| 02-4 | `uv run python -m limitup.storage` | `data/limitup.duckdb` (뷰 `daily`, `universe`, `market_daily`) |
 | 02-5 | `uv run python -m limitup.collectors.check` | 정합성 점검 리포트 |
+| 02-5 | `from limitup.collectors.adjust import adjust` | 기준가로 만든 수정주가 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
