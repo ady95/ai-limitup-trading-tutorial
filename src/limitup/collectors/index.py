@@ -11,9 +11,8 @@ import pandas as pd
 
 from limitup.collectors.daily import START
 from limitup.collectors.kis import KIS
-from limitup.paths import RAW
+from limitup.paths import INDEX_FILE
 
-INDEX_FILE = RAW / "index.parquet"
 INDICES = {"0001": "KOSPI", "1001": "KOSDAQ"}
 PATH = "/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice"
 TR_ID = "FHKUP03500100"       # 국내주식 업종기간별시세, 한 번에 최대 50행

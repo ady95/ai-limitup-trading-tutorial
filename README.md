@@ -30,6 +30,9 @@ uv run pytest -q             # 상한가 계산 테스트
 | 04-2 | `uv run python -m limitup.collectors.minute` | `data/raw/minute/<날짜>/<종목코드>.parquet` (이벤트일 정규장 1분봉, 최근 약 1년만 조회 가능) |
 | 04-3 | `uv run python -m limitup.collectors.index` | `data/raw/index.parquet` (KOSPI·KOSDAQ 지수 일봉) |
 | 04-3 | `uv run python -m limitup.collectors.master` | `data/raw/industry.parquet` (업종·주요 제품) |
+| 04-1~5 | `uv run python -m limitup.features.build` | `data/processed/features.parquet` (피처 26개, 라벨, 기간 분할) |
+| 04-4 | `uv run python -m limitup.features.build --leak 300` | 미래정보 누수 검사 |
+| 04-1~3 | `uv run python -m limitup.features.build --explore` | 학습 기간 안에서 피처 구간별 통계 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
