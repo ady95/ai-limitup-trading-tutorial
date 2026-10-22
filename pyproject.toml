@@ -1,0 +1,21 @@
+[project]
+name = "limitup"
+version = "0.1.0"
+description = "위키독스 「AI로 첫 상한가 종목의 연속 상승 예측과 자동매매 따라하기」 예제 코드"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "finance-datareader>=0.9.90",
+    "pandas>=2.2",
+    "pyarrow>=17.0",
+    "python-dotenv>=1.0",
+    "requests>=2.32",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["uv_build>=0.11.11,<0.12.0"]
+build-backend = "uv_build"
