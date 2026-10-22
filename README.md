@@ -46,6 +46,7 @@ uv run pytest -q             # 상한가 계산 테스트
 | 07-1 | `uv run python -m limitup.strategies.scores` | 연도별 워크포워드 점수 (`oos_scores.parquet`) |
 | 07장 | `uv run python -m limitup.strategies.design` | 설계 기간(2022~2024) 전략 A·B·C 비용 반영 전 성과 |
 | 07-5 | `configs/strategies.toml`, `limitup.strategies.rules` | 전략 규칙 설정과 후보 선택 |
+| 08장 | `uv run python -m limitup.backtest.run` | 평가 기간 백테스트: 슬리피지, 체결 모형, 비용, 기간·국면, 스트레스 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
