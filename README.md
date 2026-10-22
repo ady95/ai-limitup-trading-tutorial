@@ -33,6 +33,11 @@ uv run pytest -q             # 상한가 계산 테스트
 | 04-1~5 | `uv run python -m limitup.features.build` | `data/processed/features.parquet` (피처 26개, 라벨, 기간 분할) |
 | 04-4 | `uv run python -m limitup.features.build --leak 300` | 미래정보 누수 검사 |
 | 04-1~3 | `uv run python -m limitup.features.build --explore` | 학습 기간 안에서 피처 구간별 통계 |
+| 05-1 | `uv run python -m limitup.models.baseline` | 규칙 기반 기준 모델 M0 |
+| 05-2~3 | `uv run python -m limitup.models.lgbm` (`--walk`, `--intraday`) | LightGBM M1, 워크포워드, 장중 피처 추가 효과 |
+| 05-4 | `uv run python -m limitup.models.regress` | 시가 갭·장중 수익 회귀, 하방 위험 분위수 |
+| 05-5 | `uv run python -m limitup.models.explain` | SHAP 해석 |
+| 05-6 | `uv run python -m limitup.models.calibrate` | 신뢰도표, Brier·ECE, 확률 보정 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
