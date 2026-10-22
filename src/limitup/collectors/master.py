@@ -13,7 +13,7 @@ import FinanceDataReader as fdr
 import pandas as pd
 import requests
 
-from limitup.paths import UNIVERSE
+from limitup.paths import INDUSTRY, UNIVERSE
 
 URL = "https://new.real.download.dws.co.kr/common/master/{}_code.mst.zip"
 SINCE = "2021-01-01"   # 이 날짜 이후 폐지된 종목까지 포함
@@ -93,6 +93,16 @@ def delisted_stocks():
     return out[["code", "name", "market", "listed", "delisted", "is_halted", "is_managed", "reason"]]
 
 
+def industries(universe):
+    """04-3 업종(한국표준산업분류 기반)과 주요 제품. 상장은 KRX-DESC, 폐지는 KRX-DELISTING 에서."""
+    desc = fdr.StockListing("KRX-DESC")[["Code", "Industry", "Products"]]
+    dl = fdr.StockListing("KRX-DELISTING")[["Symbol", "Industry"]].rename(columns={"Symbol": "Code"})
+    dl = dl[dl.Industry.notna() & (dl.Industry != "-")].drop_duplicates("Code", keep="last")
+    ind = pd.concat([desc, dl[~dl.Code.isin(desc.Code)]], ignore_index=True)
+    ind = ind.rename(columns={"Code": "code", "Industry": "industry", "Products": "products"})
+    return universe[["code"]].merge(ind, on="code", how="left")
+
+
 def main():
     listed, delisted = listed_stocks(), delisted_stocks()
     # 같은 코드가 폐지 후 재상장된 경우 현재 상장 쪽을 남긴다
@@ -104,6 +114,10 @@ def main():
     summary = universe.assign(status=universe.delisted.isna().map({True: "상장", False: "폐지"}))
     print(summary.groupby(["market", "status"]).size().unstack().to_string())
     print(f"합계 {len(universe):,}종목 → {UNIVERSE}")
+
+    ind = industries(universe)
+    ind.to_parquet(INDUSTRY, index=False)
+    print(f"업종 매칭 {ind.industry.notna().sum():,}/{len(ind):,}종목, 업종 {ind.industry.nunique()}개 → {INDUSTRY}")
 
 
 if __name__ == "__main__":

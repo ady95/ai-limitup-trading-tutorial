@@ -27,6 +27,9 @@ uv run pytest -q             # 상한가 계산 테스트
 | 03-1 | `from limitup.events.price_limit import upper_limit, lower_limit, add_limits` | 거래소 방식 상한가·하한가 (거래소 표시와 전 종목 일치) |
 | 03-2 | `uv run python -m limitup.events.detect --lookback 20 40 60 120` | `data/processed/events.parquet` (첫 상한가 이벤트) |
 | 03-3~5 | `uv run python -m limitup.events.stats` | 다음 날 통계, H1 검증, `data/processed/report_ch03.html` |
+| 04-2 | `uv run python -m limitup.collectors.minute` | `data/raw/minute/<날짜>/<종목코드>.parquet` (이벤트일 정규장 1분봉, 최근 약 1년만 조회 가능) |
+| 04-3 | `uv run python -m limitup.collectors.index` | `data/raw/index.parquet` (KOSPI·KOSDAQ 지수 일봉) |
+| 04-3 | `uv run python -m limitup.collectors.master` | `data/raw/industry.parquet` (업종·주요 제품) |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
