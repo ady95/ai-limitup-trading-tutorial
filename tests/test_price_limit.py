@@ -22,4 +22,11 @@ def test_old_tick_tables_differ_by_market():
 
 
 def test_lower_limit_rounds_up():
-    assert lower_limit(223_500, NEW) == 156_500     # 156,450 -> 100원 단위 올림
+    assert lower_limit(223_500, NEW) == 156_500     # 제한폭 67,000 -> 156,500
+
+
+def test_limit_width_uses_base_price_tick():
+    # 03-1 실측: 기준가 21,900 (50원 단위) -> 제한폭 6,570 을 6,550 으로 버림 -> 하한가 15,350
+    assert lower_limit(21_900, NEW) == 15_350
+    assert lower_limit(57_600, NEW, "KOSDAQ") == 40_400
+    assert upper_limit(17_680, NEW) == 22_950       # 17,680 + 5,300 = 22,980 -> 50원 단위 버림

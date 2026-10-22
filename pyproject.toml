@@ -8,6 +8,7 @@ dependencies = [
     "duckdb>=1.1",
     "finance-datareader>=0.9.90",
     "pandas>=2.2",
+    "plotly>=5.24",
     "pyarrow>=17.0",
     "python-dotenv>=1.0",
     "requests>=2.32",

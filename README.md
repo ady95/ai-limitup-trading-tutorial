@@ -24,6 +24,9 @@ uv run pytest -q             # 상한가 계산 테스트
 | 02-4 | `uv run python -m limitup.storage` | `data/limitup.duckdb` (뷰 `daily`, `universe`, `market_daily`) |
 | 02-5 | `uv run python -m limitup.collectors.check` | 정합성 점검 리포트 |
 | 02-5 | `from limitup.collectors.adjust import adjust` | 기준가로 만든 수정주가 |
+| 03-1 | `from limitup.events.price_limit import upper_limit, lower_limit, add_limits` | 거래소 방식 상한가·하한가 (거래소 표시와 전 종목 일치) |
+| 03-2 | `uv run python -m limitup.events.detect --lookback 20 40 60 120` | `data/processed/events.parquet` (첫 상한가 이벤트) |
+| 03-3~5 | `uv run python -m limitup.events.stats` | 다음 날 통계, H1 검증, `data/processed/report_ch03.html` |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
