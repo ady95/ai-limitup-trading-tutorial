@@ -38,6 +38,11 @@ uv run pytest -q             # 상한가 계산 테스트
 | 05-4 | `uv run python -m limitup.models.regress` | 시가 갭·장중 수익 회귀, 하방 위험 분위수 |
 | 05-5 | `uv run python -m limitup.models.explain` | SHAP 해석 |
 | 05-6 | `uv run python -m limitup.models.calibrate` | 신뢰도표, Brier·ECE, 확률 보정 |
+| 06-1 | `uv run python -m limitup.collectors.dart` | 이벤트 직전 공시 목록·본문 (`DART_API_KEY` 필요) |
+| 06-2 | `uv run python -m limitup.llm.material --sample 50` | LLM 재료 분석 JSON (`OPENAI_*` 필요) |
+| 06-4 | `uv run python -m limitup.llm.chart` | AI 분석용 1분봉 차트 |
+| 06-5 | `uv run python -m limitup.llm.vision --sample 30` | VLM 차트 분석 JSON |
+| 06-3·6 | `uv run python -m limitup.llm.compare` (`--explore`) | M0~M3 비교 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
