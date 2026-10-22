@@ -1,0 +1,29 @@
+# 07장 매매 전략 규칙 — 설계 기간(2022~2024)의 결과로 정했다. 평가 기간(2025~)은 8장에서 처음 쓴다.
+# 숫자를 바꾸면 8장 백테스트가 그대로 다시 계산한다.
+
+[common]
+max_positions_per_day = 1        # 하루에 고르는 종목 수 (07-1: 상위 1개가 가장 좋았음)
+position_krw = 10_000_000        # 종목당 매수 금액
+max_value_share = 0.01           # 매수 금액은 T일 거래대금의 1% 이하 (유동성)
+min_value_krw = 1_000_000_000    # T일 거래대금 10억 원 미만 제외
+exclude_risk_material = true     # LLM이 소송·시장경보로 분류한 재료 제외 (07-5)
+
+[strategy.B]                     # 핵심 전략: T일 상한가 매수 → T+1 시가 매도
+enabled = true
+select_by = "pred_gap"           # 다음 날 시가 갭 예측(05-4)으로 순위
+entry = "limit_up_close"         # T일 상한가 지정가 (체결 여부는 8-3의 체결 모형이 판단)
+exit = "t1_open"
+
+[strategy.C]                     # 비교용: T+1 시가 매수 → 손절·익절 또는 종가 청산
+enabled = true
+select_by = "pred_oc"
+entry = "t1_open"
+skip_if_open_at_limit = true     # 시가가 상한가면 살 수 없음
+take_profit = 0.15
+stop_loss = 0.07
+exit = "t1_close"
+
+[strategy.A]                     # 심화 연구: 기준가 +25%에서 선제 매수 → T일 종가 매도
+enabled = false
+trigger = 0.25
+exit = "t_close"

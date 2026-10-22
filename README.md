@@ -43,6 +43,9 @@ uv run pytest -q             # 상한가 계산 테스트
 | 06-4 | `uv run python -m limitup.llm.chart` | AI 분석용 1분봉 차트 |
 | 06-5 | `uv run python -m limitup.llm.vision --sample 30` | VLM 차트 분석 JSON |
 | 06-3·6 | `uv run python -m limitup.llm.compare` (`--explore`) | M0~M3 비교 |
+| 07-1 | `uv run python -m limitup.strategies.scores` | 연도별 워크포워드 점수 (`oos_scores.parquet`) |
+| 07장 | `uv run python -m limitup.strategies.design` | 설계 기간(2022~2024) 전략 A·B·C 비용 반영 전 성과 |
+| 07-5 | `configs/strategies.toml`, `limitup.strategies.rules` | 전략 규칙 설정과 후보 선택 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
