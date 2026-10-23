@@ -47,6 +47,11 @@ uv run pytest -q             # 상한가 계산 테스트
 | 07장 | `uv run python -m limitup.strategies.design` | 설계 기간(2022~2024) 전략 A·B·C 비용 반영 전 성과 |
 | 07-5 | `configs/strategies.toml`, `limitup.strategies.rules` | 전략 규칙 설정과 후보 선택 |
 | 08장 | `uv run python -m limitup.backtest.run` | 평가 기간 백테스트: 슬리피지, 체결 모형, 비용, 기간·국면, 스트레스 |
+| 09-1 | `uv run python -m limitup.collectors.realtime 005930 --seconds 60` | 실시간 체결가·호가 (WebSocket) |
+| 09-2 | `uv run python -m limitup.execution.candidates` | 당일 첫 상한가 후보 |
+| 09-3 | `uv run python -m limitup.execution.live_score <후보.csv>` | 장중 시가 갭 예측 점수 |
+| 09-4 | `uv run python -m limitup.execution.daily close` / `open` (`--dry-run`) | 모의투자 장 마감 단일가 매수 → 다음 날 시가 매도, 체결률 기록 |
+| 09-5 | `limitup.execution.guard` (저장소 루트의 `STOP` 파일 = 비상 중지) | 주문 한도·중복 방지·모의투자 전용 |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 
