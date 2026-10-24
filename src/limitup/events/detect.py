@@ -8,6 +8,7 @@
 """
 
 import argparse
+import datetime as dt
 import os
 
 import numpy as np
@@ -22,6 +23,11 @@ START = "2021-01-01"      # 이벤트 탐지 시작일 (그 전 데이터는 직
 # 운영할 때는 LIMITUP_END 환경변수(또는 pipeline --latest)로 최신 확정일을 넣는다 (10-1).
 END = os.environ.get("LIMITUP_END", "2026-10-21")
 EVENTS = PROCESSED / "events.parquet"
+
+
+def live_end() -> str:
+    """실시간 실행(09장)에서 쓸 일봉 끝 날짜: 어제. 오늘 일봉은 장중이라 미확정이다."""
+    return (dt.date.today() - dt.timedelta(days=1)).isoformat()
 
 
 def load_daily(end=END):

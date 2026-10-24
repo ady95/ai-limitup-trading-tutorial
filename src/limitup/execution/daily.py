@@ -11,10 +11,13 @@ close 단계
 open 단계
   4. 08:55 보유분 전량 시장가 매도 (시가 단일가)
   5. 09:05 매도 체결가를 data/processed/paper_sell_log.csv 에 추가
+  6. 일봉·지수 증분 수집 (어제 일봉이 확정된 뒤 — 오늘 close 단계의 후보 탐지·점수에 쓴다)
 """
 
 import argparse
 import datetime as dt
+import subprocess
+import sys
 import time
 
 import pandas as pd
@@ -107,6 +110,13 @@ def close_phase(dry_run=False, max_orders=5):
         append(FILL_LOG, out)
 
 
+def refresh_data():
+    """일봉·지수 증분 수집을 별도 프로세스로 실행한다 (02-3, 04-3). 실패해도 매매 기록은 이미 끝났다."""
+    for module in ("limitup.collectors.daily", "limitup.collectors.index"):
+        r = subprocess.run([sys.executable, "-m", module])
+        print(module, "완료" if r.returncode == 0 else f"실패 (종료 코드 {r.returncode})", flush=True)
+
+
 def open_phase(dry_run=False):
     paper = KIS("paper")
     if not is_open_day(KIS("real")):
@@ -118,12 +128,13 @@ def open_phase(dry_run=False):
         r = {"rt_cd": "dry-run"} if dry_run else sell_market(paper, h["code"], h["qty"])
         print(h, r.get("rt_cd"), r.get("msg1", ""), flush=True)
     wait_until("09:05:00")
-    if dry_run or not hold:
-        return
-    f = fills(paper, dt.date.today().strftime("%Y%m%d"))
-    f = f.assign(date=dt.date.today().isoformat())
-    print(f.to_string(index=False))
-    append(SELL_LOG, f)
+    if hold and not dry_run:
+        f = fills(paper, dt.date.today().strftime("%Y%m%d"))
+        f = f.assign(date=dt.date.today().isoformat())
+        print(f.to_string(index=False))
+        append(SELL_LOG, f)
+    if not dry_run:
+        refresh_data()
 
 
 if __name__ == "__main__":

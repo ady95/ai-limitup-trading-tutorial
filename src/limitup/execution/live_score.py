@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from limitup.collectors.kis import KIS
-from limitup.events.detect import load_daily
+from limitup.events.detect import live_end, load_daily
 from limitup.features.daily import stock_features
 from limitup.models.common import FEATURES, load
 from limitup.models.regress import BASE
@@ -43,9 +43,10 @@ def index_now(kis, market):
 
 
 def build_rows(cands, kis, today):
-    df = load_daily()
+    df = load_daily(end=live_end())         # 어제까지의 확정 일봉
     hist_lu = df[~df.halted].groupby("date").lu_close.sum()
     ix = pd.read_parquet(INDEX_FILE).sort_values("date")
+    ix = ix[ix.date < pd.Timestamp(today)]  # 아침 수집분에 섞인 오늘 장중 지수는 뺀다
     idx = {m: index_now(kis, m) for m in INDEX_CODES}
     n_lu = int(cands.n_limit_up.iloc[0]) if "n_limit_up" in cands else len(cands)
     rows = []

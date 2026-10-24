@@ -6,7 +6,7 @@
 import pandas as pd
 
 from limitup.collectors.kis import KIS
-from limitup.events.detect import detect, load_daily
+from limitup.events.detect import detect, live_end, load_daily
 
 MIN_VALUE = 1_000_000_000
 
@@ -32,7 +32,7 @@ def limit_up_now(kis: KIS) -> pd.DataFrame:
 
 def first_limit_up(cands: pd.DataFrame) -> pd.DataFrame:
     """직전 60거래일 상한가 마감 이력이 없고, 분석 모집단(보통주)에 있는 종목만"""
-    df = load_daily()
+    df = load_daily(end=live_end())         # 어제까지의 확정 일봉 (책 재현용 기준일이 아님)
     _, d = detect(df, 60)
     last = d.sort_values("date").groupby("code").tail(1).set_index("code")
     lu60 = d[d.date >= d.date.max() - pd.Timedelta(days=95)].groupby("code").lu_close.sum()
