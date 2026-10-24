@@ -5,6 +5,8 @@
 탭: 개요 / 오늘의 후보 / 모의투자 체결 / 백테스트. 모든 숫자는 data/processed 의 결과 파일에서 읽는다.
 """
 
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -68,9 +70,13 @@ with tab0:
 with tab1:
     st.subheader("오늘의 첫 상한가 후보와 다음 날 시가 갭 예측")
     cand = load_csv("today_candidates_scored.csv")
-    if cand.empty:
-        cand = load_csv("today_candidates.csv")
-    st.dataframe(cand, hide_index=True, use_container_width=True) if len(cand) else st.info("아직 오늘의 후보가 없습니다 (15:10 이후 생성).")
+    if len(cand) and "date" in cand and (cand.date.astype(str) == dt.date.today().isoformat()).all():
+        st.dataframe(cand, hide_index=True, use_container_width=True)
+    elif len(cand) and "date" in cand:
+        st.info(f"오늘의 후보가 아직 없습니다 (daily close 실행 시 15:10 이후 생성). 아래는 {cand.date.iloc[0]}의 후보입니다.")
+        st.dataframe(cand, hide_index=True, use_container_width=True)
+    else:
+        st.info("아직 오늘의 후보가 없습니다 (daily close 실행 시 15:10 이후 생성).")
 
 with tab2:
     st.subheader("장 마감 단일가 상한가 매수의 체결 기록")

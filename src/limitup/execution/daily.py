@@ -32,6 +32,7 @@ from limitup.models.common import FEATURES
 from limitup.paths import PROCESSED
 
 FILL_LOG = PROCESSED / "paper_fill_log.csv"
+SCORED = PROCESSED / "today_candidates_scored.csv"   # 10-2 대시보드의 오늘의 후보 탭
 SELL_LOG = PROCESSED / "paper_sell_log.csv"
 
 
@@ -69,6 +70,9 @@ def close_phase(dry_run=False, max_orders=5):
     scored = build_rows(cands, real, today)
     scored["pred_gap"] = gap_model().predict(scored[FEATURES])
     cands = cands.merge(scored[["code", "pred_gap"]], on="code").sort_values("pred_gap", ascending=False)
+    cands.assign(date=today.isoformat()).to_csv(SCORED, index=False)
+    if len(cands) > max_orders:
+        print(f"후보 {len(cands)}종목 중 점수 상위 {max_orders}종목만 주문")
     cands = cands.head(max_orders)
     cash = balance(paper)["cash"]
     amount = min(2_000_000, cash // len(cands))

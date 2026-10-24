@@ -54,7 +54,8 @@ class KIS:
         prefix = f"KIS_{env.upper()}_"          # KIS_REAL_APP_KEY, KIS_PAPER_APP_KEY ...
         self.app_key = os.environ[prefix + "APP_KEY"]
         self.app_secret = os.environ[prefix + "APP_SECRET"]
-        self.limiter = RateLimiter(float(os.getenv("KIS_RATE_PER_SEC", RATE_PER_SEC[env])))
+        # 환경별로 따로 낮출 수 있다: KIS_REAL_RATE_PER_SEC, KIS_PAPER_RATE_PER_SEC
+        self.limiter = RateLimiter(float(os.getenv(f"KIS_{env.upper()}_RATE_PER_SEC", RATE_PER_SEC[env])))
         self.token_path = CACHE / f"token_{env}.json"
         self.token_lock = threading.Lock()
         self.token = None

@@ -1,7 +1,7 @@
 """09-4 모의투자 주문·체결 조회 (한국투자증권 모의투자 계좌)
 
     uv run python -m limitup.execution.paper balance
-    uv run python -m limitup.execution.paper buy-close data/processed/today_candidates.csv --at 15:20:05
+    uv run python -m limitup.execution.paper buy-close data/processed/today_candidates.csv --at 15:20:05   # 09-5 Guard 적용
     uv run python -m limitup.execution.paper fills
     uv run python -m limitup.execution.paper sell-open --at 08:55:00   # 다음 날 시가 단일가에 보유분 전량 매도
 
@@ -18,10 +18,11 @@ import pandas as pd
 import requests
 
 from limitup.collectors.kis import KIS
+from limitup.execution.guard import Guard
 from limitup.paths import PROCESSED
 
 LOG_DIR = PROCESSED / "paper_orders"
-AMOUNT = 10_000_000
+AMOUNT = 2_000_000                # 종목당 주문 금액 — 09-5 Guard의 1건 한도와 같게
 
 
 def account():
@@ -122,10 +123,16 @@ def main():
         while dt.datetime.now() < target:
             time.sleep(0.5)
         LOG_DIR.mkdir(parents=True, exist_ok=True)
+        guard = Guard(kis)                # 모의투자 확인·STOP·주문 수와 금액 한도·중복 방지 (09-5)
         log = []
         for r in cands.itertuples():
+            ok, why = guard.allow(r.code, a.amount)
+            if not ok:
+                print(r.code, "주문 안 함:", why, flush=True)
+                continue
             qty = a.amount // r.upper
             res = buy_limit(kis, r.code, int(r.upper), int(qty))
+            guard.record(r.code, a.amount, res)
             row = {"time": dt.datetime.now().isoformat(timespec="seconds"), "code": r.code, "price": int(r.upper),
                    "qty": int(qty), "rt_cd": res.get("rt_cd"), "msg": res.get("msg1", "").strip(),
                    "order_no": (res.get("output") or {}).get("ODNO")}

@@ -1,11 +1,11 @@
-"""10-4 모의매매 실험 리포트 — 쌓인 체결 기록으로 8-6의 판단 기준을 점검한다
+"""10-4 모의매매 실험 리포트 — 쌓인 체결 기록으로 08-6의 판단 기준을 점검한다
 
     uv run python -m limitup.execution.report
 
 - 체결률: 주문 수량·금액 기준, 날짜별, 전략 B 선택(strategy_pick)만 따로
 - 원인: 대기열 중 장 마감 단일가 체결 비율, 첫 도달 뒤 잠김 여부별 체결률
 - 다음 날 성과: 매도 기록(paper_sell_log.csv)이 있으면 체결분의 실제 손익
-- 판정: 8-6의 실전 검토 기준(금액 체결률 50%)과 비교
+- 판정: 08-6의 실전 검토 기준(금액 체결률 50%)과 비교
 """
 
 import pandas as pd
@@ -49,7 +49,7 @@ def main():
     else:
         print("\n매도 기록 없음 — 다음 거래일 daily open 이후 생깁니다.")
     verdict = "충족" if amt >= THRESHOLD else "미충족"
-    print(f"\n8-6 실전 검토 기준(금액 체결률 {THRESHOLD:.0%} 이상): {verdict} — 현재 {amt:.2%}")
+    print(f"\n08-6 실전 검토 기준(금액 체결률 {THRESHOLD:.0%} 이상): {verdict} — 현재 {amt:.2%}")
 
 
 if __name__ == "__main__":

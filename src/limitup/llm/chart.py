@@ -18,7 +18,7 @@ import pandas as pd
 
 from limitup.collectors.minute import load_minute
 from limitup.features.intraday import minutes_since_open
-from limitup.paths import PROCESSED
+from limitup.paths import DAILY_DIR, PROCESSED
 
 CHART_DIR = PROCESSED / "charts"
 
@@ -56,7 +56,7 @@ def main():
         if path.exists():
             continue
         if r.code not in daily:
-            daily[r.code] = pd.read_parquet(f"data/raw/daily/{r.code}.parquet").set_index("date").base
+            daily[r.code] = pd.read_parquet(DAILY_DIR / f"{r.code}.parquet").set_index("date").base
         draw(load_minute(r.code, f"{r.date:%Y%m%d}"), int(daily[r.code].loc[r.date]), int(r.upper), path)
         n += 1
     print(f"차트 {n:,}장 생성 → {CHART_DIR}")
