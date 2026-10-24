@@ -8,6 +8,7 @@
 """
 
 import argparse
+import os
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,9 @@ from limitup.paths import PROCESSED
 from limitup.storage import build
 
 START = "2021-01-01"      # 이벤트 탐지 시작일 (그 전 데이터는 직전 거래일 확인용)
-END = "2026-10-21"        # 확정된 마지막 거래일 (수집 당일 일봉은 미확정 — 02-5)
+# 분석 기준일: 책의 수치는 2026-10-21(당시 확정된 마지막 거래일)로 고정해 재현할 수 있게 한다.
+# 운영할 때는 LIMITUP_END 환경변수(또는 pipeline --latest)로 최신 확정일을 넣는다 (10-1).
+END = os.environ.get("LIMITUP_END", "2026-10-21")
 EVENTS = PROCESSED / "events.parquet"
 
 
