@@ -52,6 +52,7 @@ uv run pytest -q             # 상한가 계산 테스트
 | 09-3 | `uv run python -m limitup.execution.live_score <후보.csv>` | 장중 시가 갭 예측 점수 |
 | 09-4 | `uv run python -m limitup.execution.daily close` / `open` (`--dry-run`) | 모의투자 장 마감 단일가 매수 → 다음 날 시가 매도, 체결률 기록 |
 | 09-5 | `limitup.execution.guard` (저장소 루트의 `STOP` 파일 = 비상 중지) | 주문 한도·중복 방지·모의투자 전용 |
+| 09-4 | `scripts/run_daily.ps1 -Phase open|close` | Windows 작업 스케줄러용 래퍼 (휴장일 자동 건너뜀, 로그는 `data/processed/paper_orders/`) |
 
 이후 장의 코드는 책 집필에 맞춰 추가됩니다.
 

@@ -32,6 +32,14 @@ FILL_LOG = PROCESSED / "paper_fill_log.csv"
 SELL_LOG = PROCESSED / "paper_sell_log.csv"
 
 
+def is_open_day(kis_real, day=None) -> bool:
+    """한국투자증권 휴장일 조회(국내휴장일조회)로 오늘이 개장일인지 확인한다. 평일 공휴일 대비."""
+    day = (day or dt.date.today()).strftime("%Y%m%d")
+    b = kis_real.get("/uapi/domestic-stock/v1/quotations/chk-holiday", "CTCA0903R",
+                     {"BASS_DT": day, "CTX_AREA_NK": "", "CTX_AREA_FK": ""})
+    return next((r["opnd_yn"] == "Y" for r in b["output"] if r["bass_dt"] == day), False)
+
+
 def wait_until(hhmmss: str):
     t = dt.datetime.combine(dt.date.today(), dt.time.fromisoformat(hhmmss))
     while dt.datetime.now() < t:
@@ -46,6 +54,9 @@ def append(path, df):
 def close_phase(dry_run=False, max_orders=5):
     real, paper = KIS("real"), KIS("paper")
     today = dt.date.today()
+    if not is_open_day(real):
+        print(f"{today} 휴장일 — 실행하지 않음")
+        return
     wait_until("15:10:00")
     now = limit_up_now(real)
     cands = first_limit_up(now).assign(n_limit_up=len(now))
@@ -98,6 +109,9 @@ def close_phase(dry_run=False, max_orders=5):
 
 def open_phase(dry_run=False):
     paper = KIS("paper")
+    if not is_open_day(KIS("real")):
+        print(f"{dt.date.today()} 휴장일 — 실행하지 않음")
+        return
     wait_until("08:55:00")
     hold = holdings(paper)
     for h in hold:
