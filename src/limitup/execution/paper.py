@@ -131,6 +131,7 @@ def main():
                 print(r.code, "주문 안 함:", why, flush=True)
                 continue
             qty = a.amount // r.upper
+            guard.reserve(r.code, a.amount)
             res = buy_limit(kis, r.code, int(r.upper), int(qty))
             guard.record(r.code, a.amount, res)
             row = {"time": dt.datetime.now().isoformat(timespec="seconds"), "code": r.code, "price": int(r.upper),

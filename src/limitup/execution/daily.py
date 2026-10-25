@@ -31,6 +31,13 @@ from limitup.execution.paper import balance, buy_limit, fills, holdings, sell_ma
 from limitup.models.common import FEATURES
 from limitup.paths import PROCESSED
 
+# 장 운영 시간이 평소와 다른 날 — 고정 시각(08:55·15:20·15:31) 일정이 맞지 않으므로 자동 실행을 멈춘다.
+# 거래소 공지(수능일, 연초 개장일 등)를 보고 해마다 갱신한다.
+SPECIAL_DAYS = {
+    "2026-11-19": "대학수학능력시험일 — 장 운영 시간 변경(공지 확인)",
+    "2027-01-04": "연초 개장일 — 10:00 개장",
+}
+
 FILL_LOG = PROCESSED / "paper_fill_log.csv"
 SCORED = PROCESSED / "today_candidates_scored.csv"   # 10-2 대시보드의 오늘의 후보 탭
 SELL_LOG = PROCESSED / "paper_sell_log.csv"
@@ -42,6 +49,15 @@ def is_open_day(kis_real, day=None) -> bool:
     b = kis_real.get("/uapi/domestic-stock/v1/quotations/chk-holiday", "CTCA0903R",
                      {"BASS_DT": day, "CTX_AREA_NK": "", "CTX_AREA_FK": ""})
     return next((r["opnd_yn"] == "Y" for r in b["output"] if r["bass_dt"] == day), False)
+
+
+def regular_day(day=None) -> bool:
+    """SPECIAL_DAYS 에 있는 날이면 이유를 출력하고 False"""
+    day = (day or dt.date.today()).isoformat()
+    if day in SPECIAL_DAYS:
+        print(f"{day} {SPECIAL_DAYS[day]} — 자동 실행하지 않음 (보유분은 다음 정규 거래일 open 단계에서 매도)")
+        return False
+    return True
 
 
 def wait_until(hhmmss: str):
@@ -60,6 +76,8 @@ def close_phase(dry_run=False, max_orders=5):
     today = dt.date.today()
     if not is_open_day(real):
         print(f"{today} 휴장일 — 실행하지 않음")
+        return
+    if not regular_day(today):
         return
     wait_until("15:10:00")
     now = limit_up_now(real)
@@ -87,6 +105,8 @@ def close_phase(dry_run=False, max_orders=5):
             print(r.code, "주문 안 함:", why)
             continue
         qty = amount // r.upper
+        if not dry_run:
+            guard.reserve(r.code, amount)
         res = {"rt_cd": "dry-run"} if dry_run else buy_limit(paper, r.code, int(r.upper), int(qty))
         if not dry_run:
             guard.record(r.code, amount, res)
@@ -125,6 +145,8 @@ def open_phase(dry_run=False):
     paper = KIS("paper")
     if not is_open_day(KIS("real")):
         print(f"{dt.date.today()} 휴장일 — 실행하지 않음")
+        return
+    if not regular_day():
         return
     wait_until("08:55:00")
     hold = holdings(paper)

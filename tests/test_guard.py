@@ -25,3 +25,15 @@ def test_limits_duplicates_and_stop(tmp_path, monkeypatch):
     assert not guard.allow("000002", 1_600_000)[0]           # 총액 한도
     (tmp_path / "STOP").write_text("")
     assert not guard.allow("000003", 100_000)[0]             # 비상 중지
+
+
+def test_pending_order_blocks_retry_and_lock(tmp_path, monkeypatch):
+    guard = make(tmp_path, monkeypatch)
+    guard.reserve("000001", 1_000_000)                      # 주문 전송 직전에 죽었다고 가정
+    with pytest.raises(RuntimeError):                       # 같은 날 두 번째 실행은 잠금에 막힘
+        g.Guard(types.SimpleNamespace(env="paper"))
+    guard.close()                                           # 주문 내역 확인 뒤 잠금 해제
+    again = g.Guard(types.SimpleNamespace(env="paper"))
+    assert not again.allow("000001", 1_000_000)[0]          # 예약만 남은 종목도 다시 주문하지 않음
+    assert len(again.done) == 1
+    again.close()
