@@ -86,8 +86,8 @@ with tab2:
         f = fills.copy()
         f["auction_share"] = f.auction_volume / (f.auction_volume + f.bid_qty1_after_close)
         fig = px.scatter(f, x="auction_share", y="fill_ratio", hover_data=["date", "code", "order_qty", "filled_qty"],
-                         title="대기열 중 장 마감 단일가에서 체결된 비율 대 내 주문의 체결 비율",
-                         labels={"auction_share": "대기열 중 체결 비율", "fill_ratio": "내 주문 체결 비율"})
+                         title="대기열 대용 비율(종가 단일가 거래량 ÷ (거래량 + 15:31 매수 1호가 잔량)) 대 내 주문의 체결 비율",
+                         labels={"auction_share": "대기열 대용 비율", "fill_ratio": "내 주문 체결 비율"})
         fig.update_traces(marker=dict(size=10, color=SERIES, line=dict(width=2, color="white")))
         fig.add_shape(type="line", x0=0, y0=0, x1=1, y1=1, line=dict(color="rgba(128,128,128,0.5)", dash="dot"))
         top = max(0.3, f.auction_share.max() * 1.1, f.fill_ratio.max() * 1.1)
@@ -95,7 +95,7 @@ with tab2:
         fig = style(fig)
         fig.update_yaxes(range=[0, top])                    # 두 축을 같은 범위로 — 점선이 45도가 되게
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("점선은 '대기열이 체결된 만큼 내 주문도 체결'되는 경우입니다. 점선 아래면 내 주문이 대기열 평균보다 덜 체결된 것입니다.")
+        st.caption("점선은 내 주문 체결 비율이 대기열 대용 비율과 같은 경우입니다. 대용 비율은 서로 다른 시각의 거래량과 잔량으로 만든 값이라 실제 대기열 체결률이나 내 순번을 뜻하지 않습니다 (09-4).")
         pct = st.column_config.NumberColumn(format="percent")
         st.dataframe(f, hide_index=True, use_container_width=True,
                      column_config={"fill_ratio": pct, "auction_share": pct, "auction_share_of_queue": pct})
@@ -112,4 +112,4 @@ with tab3:
                  hide_index=True, use_container_width=True,
                  column_config={"거래당 평균": st.column_config.NumberColumn(format="percent"),
                                 "승률": st.column_config.NumberColumn(format="percent")})
-    st.warning("이 성과는 체결을 가정한 상한선입니다. 확인 가능한 보수적 체결 규칙에서는 손실이었습니다 (08-3).")
+    st.warning("B-마감 사후 참고 성과입니다. 최종 마감 종목·확정 일봉 피처를 사후적으로 쓰고 전량 체결을 가정한 계산으로, 실행 가능한 전략의 성과도 실제 성과의 상한도 아닙니다 (07-3, 08-3).")

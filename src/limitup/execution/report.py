@@ -3,7 +3,7 @@
     uv run python -m limitup.execution.report
 
 - 체결률: 주문 수량·금액 기준, 날짜별, 전략 B 선택(strategy_pick)만 따로
-- 원인: 대기열 중 장 마감 단일가 체결 비율, 첫 도달 뒤 잠김 여부별 체결률
+- 원인: 대기열 대용 비율(종가 단일가 거래량 ÷ (거래량 + 15:31 매수 1호가 잔량)), 첫 도달 뒤 잠김 여부별 체결률
 - 다음 날 성과: 매도 기록(paper_sell_log.csv)이 있으면 체결분의 실제 손익
 - 판정: 08-6의 실전 검토 기준(금액 체결률 50%)과 비교
 """
@@ -39,7 +39,7 @@ def main():
     print(g.to_string(formatters={"orders": "{:.0f}".format, "fill_amt_rate": "{:.2%}".format}))
     if "bid_qty1_after_close" in f:
         share = f.auction_volume / (f.auction_volume + f.bid_qty1_after_close)
-        print(f"  대기열 중 장 마감 단일가 체결 비율: 중앙값 {share.median():.1%} (최소 {share.min():.1%}, 최대 {share.max():.1%})")
+        print(f"  대기열 대용 비율(거래량·잔량 기반): 중앙값 {share.median():.1%} (최소 {share.min():.1%}, 최대 {share.max():.1%})")
     d = f.groupby("date").apply(lambda x: x.fill_amt.sum() / x.order_amt.sum(), include_groups=False)
     print("  날짜별 금액 체결률:", ", ".join(f"{k} {v:.1%}" for k, v in d.items()))
     if SELL_LOG.exists():
