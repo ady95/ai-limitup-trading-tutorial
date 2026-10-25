@@ -14,7 +14,9 @@ import streamlit as st
 
 from limitup.paths import PROCESSED
 
-SERIES = "#2a78d6"            # 단일 계열 색 (기준 팔레트 1번)
+SERIES = "#2a78d6"
+B_WARNING = ("B-마감 사후 참고 성과입니다. 최종 마감 종목·확정 일봉 피처를 사후적으로 쓰고 전량 체결을 가정한 계산으로, "
+             "실행 가능한 전략의 성과도 실제 성과의 상한도 아닙니다 (07-3, 08-3).")            # 단일 계열 색 (기준 팔레트 1번)
 GRID = "rgba(128,128,128,0.15)"
 st.set_page_config(page_title="첫 상한가 모니터링", layout="wide")
 
@@ -60,12 +62,14 @@ with tab0:
     c[1].metric("M1 평가 기간 PR-AUC", f"{average_precision_score(pred.y_close, pred.m1):.3f}",
                 f"M0 대비 {average_precision_score(pred.y_close, pred.m1) - average_precision_score(pred.y_close, pred.m0):+.3f}")
     b = backtest_b()
-    c[2].metric("전략 B 거래당 평균 (항상 체결 가정)", f"{b.net.mean():+.2%}")
+    c[2].metric("B-마감 사후 참고 성과 (거래당)", f"{b.net.mean():+.2%}")
     if len(fills):
-        amt = (fills.filled_qty * fills.price).sum() / (fills.order_qty * fills.price).sum()
-        c[3].metric("모의투자 금액 체결률", f"{amt:.1%}")
-        c[3].caption(f"{fills.date.nunique()}거래일, 주문 {len(fills)}건 기준")
-    st.caption("전략 B의 평균은 장 마감 단일가에 항상 체결된다는 가정의 값입니다. 실제 체결률은 '모의투자 체결' 탭을 보세요.")
+        ok = fills[fills["eligible"].astype(str).eq("True")] if "eligible" in fills else fills
+        if len(ok):
+            amt = (ok.filled_qty * ok.price).sum() / (ok.order_qty * ok.price).sum()
+            c[3].metric("모의투자 금액 체결률 (적격 주문)", f"{amt:.1%}")
+        c[3].caption(f"{fills.date.nunique()}거래일, 적격 {len(ok)}건 / 전체 {len(fills)}건")
+    st.caption(B_WARNING)
 
 with tab1:
     st.subheader("오늘의 첫 상한가 후보와 다음 날 시가 갭 예측")
@@ -85,23 +89,33 @@ with tab2:
     else:
         f = fills.copy()
         f["auction_share"] = f.auction_volume / (f.auction_volume + f.bid_qty1_after_close)
-        fig = px.scatter(f, x="auction_share", y="fill_ratio", hover_data=["date", "code", "order_qty", "filled_qty"],
+        ok = f["eligible"].astype(str).eq("True") if "eligible" in f else pd.Series(True, index=f.index)
+        f.insert(2, "구분", ok.map({True: "적격 주문", False: "제외 주문"}))
+        if "exclude_reason" in f:
+            f["exclude_reason"] = f.exclude_reason.fillna("")
+        fig = px.scatter(f, x="auction_share", y="fill_ratio", symbol="구분",
+                         symbol_map={"적격 주문": "circle", "제외 주문": "x"},
+                         hover_data=["date", "code", "order_qty", "filled_qty"],
                          title="대기열 대용 비율(종가 단일가 거래량 ÷ (거래량 + 15:31 매수 1호가 잔량)) 대 내 주문의 체결 비율",
                          labels={"auction_share": "대기열 대용 비율", "fill_ratio": "내 주문 체결 비율"})
-        fig.update_traces(marker=dict(size=10, color=SERIES, line=dict(width=2, color="white")))
+        fig.update_traces(marker=dict(size=11, color=SERIES, line=dict(width=2, color="white")))
         fig.add_shape(type="line", x0=0, y0=0, x1=1, y1=1, line=dict(color="rgba(128,128,128,0.5)", dash="dot"))
         top = max(0.3, f.auction_share.max() * 1.1, f.fill_ratio.max() * 1.1)
         fig.update_xaxes(tickformat=".0%", range=[0, top])
         fig = style(fig)
         fig.update_yaxes(range=[0, top])                    # 두 축을 같은 범위로 — 점선이 45도가 되게
+        fig.update_layout(showlegend=True, legend=dict(title="", orientation="h", y=1.02, x=1, xanchor="right", yanchor="bottom"))
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("점선은 내 주문 체결 비율이 대기열 대용 비율과 같은 경우입니다. 대용 비율은 서로 다른 시각의 거래량과 잔량으로 만든 값이라 실제 대기열 체결률이나 내 순번을 뜻하지 않습니다 (09-4).")
+        st.caption("점선은 내 주문 체결 비율이 대기열 대용 비율과 같은 경우입니다. 대용 비율은 서로 다른 시각의 거래량과 잔량으로 만든 값이라 "
+                   "실제 대기열 체결률이나 내 순번을 뜻하지 않습니다 (09-4). x 표시는 첫 상한가 조건 오류 등으로 집계에서 제외한 주문입니다(제외 사유 열).")
         pct = st.column_config.NumberColumn(format="percent")
+        front = [c for c in ["date", "code", "구분", "exclude_reason"] if c in f]
+        f = f[front + [c for c in f.columns if c not in front]]
         st.dataframe(f, hide_index=True, use_container_width=True,
                      column_config={"fill_ratio": pct, "auction_share": pct, "auction_share_of_queue": pct})
 
 with tab3:
-    st.subheader("전략 B 평가 기간 성과 (항상 체결 가정, 비용·슬리피지 0.1% 포함)")
+    st.subheader("B-마감 사후 참고 성과 (평가 기간, 전량 체결 가정, 비용·슬리피지 0.1% 포함)")
     b = backtest_b()
     h = b.groupby("half").net.agg(mean="mean", n="size", win=lambda x: (x > 0).mean()).reset_index()
     fig = px.bar(h, x="half", y="mean", hover_data={"n": True, "win": ":.1%"}, title="반기별 거래당 평균 수익률",
@@ -112,4 +126,4 @@ with tab3:
                  hide_index=True, use_container_width=True,
                  column_config={"거래당 평균": st.column_config.NumberColumn(format="percent"),
                                 "승률": st.column_config.NumberColumn(format="percent")})
-    st.warning("B-마감 사후 참고 성과입니다. 최종 마감 종목·확정 일봉 피처를 사후적으로 쓰고 전량 체결을 가정한 계산으로, 실행 가능한 전략의 성과도 실제 성과의 상한도 아닙니다 (07-3, 08-3).")
+    st.warning(B_WARNING)
