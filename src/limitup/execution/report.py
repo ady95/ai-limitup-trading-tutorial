@@ -58,10 +58,19 @@ def main():
     d = f.groupby("date").apply(lambda x: x.fill_amt.sum() / x.order_amt.sum(), include_groups=False)
     print("  날짜별 금액 체결률(전체):", ", ".join(f"{k} {v:.1%}" for k, v in d.items()))
     if SELL_LOG.exists():
-        s = pd.read_csv(SELL_LOG, dtype={"code": str})
+        s = pd.read_csv(SELL_LOG, dtype={"code": str, "order_no": str, "order_time": str}).fillna("")
         late = s[s["delayed_exit"].astype(str).eq("True")] if "delayed_exit" in s else s.iloc[0:0]
         print(f"\n매도 기록 {len(s)}건 (다음 날 시가 단일가), 그중 지연 청산 {len(late)}건")
-        print(s.to_string(index=False))
+        # 매도분을 직전 체결 기록(매수일 < 매도일)과 짝지어 수수료·세금 전 수익률을 낸다
+        buys = f[f.filled_qty > 0][["date", "code", "price", "eligible"]]
+        rows = []
+        for r in s.itertuples():
+            b = buys[(buys.code == r.code) & (buys.date < r.date)].tail(1)
+            if len(b):
+                rows.append({"매도일": r.date, "code": r.code, "수량": int(r.filled_qty), "매수가": int(b.price.iloc[0]),
+                             "매도가": int(r.avg_price), "수익률(비용 전)": f"{int(r.avg_price) / b.price.iloc[0] - 1:+.2%}",
+                             "적격": bool(b.eligible.iloc[0]), "지연 청산": str(r.delayed_exit) == "True"})
+        print(pd.DataFrame(rows).to_string(index=False) if rows else s.to_string(index=False))
     else:
         print("\n매도 기록 없음 — 다음 거래일 daily open 이후 생깁니다.")
     if ok.empty:

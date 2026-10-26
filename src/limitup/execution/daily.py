@@ -3,6 +3,7 @@
     uv run python -m limitup.execution.daily close      # 15:10 이전에 실행 → 15:20 주문 → 15:31 기록
     uv run python -m limitup.execution.daily open       # 08:50 이전에 실행 → 08:55 시가 매도 → 09:05 기록
     uv run python -m limitup.execution.daily close --dry-run   # 주문 없이 전 과정 점검
+    uv run python -m limitup.execution.daily reconcile         # 잠정 기록만 다시 조회해 정정 (주문 없음)
 
 close 단계
   1. 15:10 첫 상한가 후보 탐지(09-2)와 시가 갭 예측 점수(09-3)
@@ -11,7 +12,7 @@ close 단계
 open 단계
   4. 08:55 보유분 전량 시장가 매도 (시가 단일가)
   5. 09:05 매도 체결가를 data/processed/paper_sell_log.csv 에 추가
-  6. 일봉·지수 증분 수집 (어제 일봉이 확정된 뒤 — 오늘 close 단계의 후보 탐지·점수에 쓴다)
+  6. 지난 잠정 기록(provisional) 재조회·정정 → 일봉·지수 증분 수집
 안전 규칙
   - 늦게 시작하면(허용 시각을 넘기면) 주문하지 않는다. 표준 일정이 아닌 결과를 실험 기록에 섞지 않기 위해서다
   - 다음 개장일이 SPECIAL_DAYS 면 close 단계에서 신규 매수를 하지 않는다 (T+1 시가 청산이 어긋나므로)
@@ -183,6 +184,41 @@ def close_phase(dry_run=False, max_orders=5):
         append(FILL_LOG, out)
 
 
+def reconcile(real=None, paper=None):
+    """provisional 행(종가 단일가 봉이 아직 없던 기록)을 다시 조회해 체결·분봉 값을 정정한다.
+
+    분봉 API에 종가 단일가 봉이 늦게 올라오는 날이 있다(2026-10-26: 15:40 조회 때 없음, 18:40 조회 때 있음).
+    원래 값은 덮어쓰고, 정정 시각(reconciled_at)과 정정 전 종가 단일가 거래량(auction_volume_provisional)을 남긴다.
+    """
+    if not FILL_LOG.exists():
+        return
+    log = pd.read_csv(FILL_LOG, dtype={"code": str, "first_touch": str})
+    todo = log.index[log.get("provisional", pd.Series(False, index=log.index)).astype(str).eq("True")]
+    if len(todo) == 0:
+        print("정정할 잠정 기록 없음")
+        return
+    real, paper = real or KIS("real"), paper or KIS("paper")
+    for i in todo:
+        r = log.loc[i]
+        day = str(r["date"]).replace("-", "")
+        m = fetch_day(real, r["code"], day)
+        if not (m.time >= "153000").any():
+            print(r["date"], r["code"], "아직 종가 단일가 봉 없음 — 다음에 다시 정정")
+            continue
+        f = fills(paper, day)
+        filled = int(f[f.code == r["code"]].filled_qty.astype(int).sum()) if len(f) else 0
+        first = m[m.high >= r["price"]].time.min()
+        log.loc[i, "auction_volume_provisional"] = r["auction_volume"]
+        log.loc[i, ["filled_qty", "fill_ratio", "auction_volume", "day_volume", "first_touch",
+                    "breaks_after_touch", "closed_at_limit", "provisional", "reconciled_at"]] = [
+            filled, filled / r["order_qty"], int(m[m.time >= "153000"].volume.sum()), int(m.volume.sum()), first,
+            int((m[m.time > first].low < r["price"]).sum()), bool(m.close.iloc[-1] == r["price"]), False,
+            dt.datetime.now().isoformat(timespec="seconds")]
+        print(r["date"], r["code"], f"정정: 체결 {filled}주, 종가 단일가 거래량 {r['auction_volume']} → "
+              f"{log.loc[i, 'auction_volume']}", flush=True)
+    log.to_csv(FILL_LOG, index=False)
+
+
 def refresh_data():
     """일봉·지수 증분 수집을 별도 프로세스로 실행한다 (02-3, 04-3). 실패해도 매매 기록은 이미 끝났다."""
     for module in ("limitup.collectors.daily", "limitup.collectors.index"):
@@ -219,12 +255,13 @@ def open_phase(dry_run=False):
         append(SELL_LOG, f)
         DELAYED.unlink(missing_ok=True)
     if not dry_run:
+        reconcile(paper=paper)
         refresh_data()
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=["close", "open"])
+    ap.add_argument("phase", choices=["close", "open", "reconcile"])
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    close_phase(a.dry_run) if a.phase == "close" else open_phase(a.dry_run)
+    {"close": lambda: close_phase(a.dry_run), "open": lambda: open_phase(a.dry_run), "reconcile": reconcile}[a.phase]()
